@@ -34,10 +34,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 border-r border-white/5 bg-[#0f0f16]/60 backdrop-blur-md flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-white/5">
-          <div className="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center mr-3 shadow-lg shadow-indigo-500/20 border border-white/10 relative">
             <span className="font-bold text-white text-lg">G</span>
+            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white text-indigo-600 rounded-full flex items-center justify-center text-[9px] font-black shadow-sm border border-white">+</div>
           </div>
-          <span className="font-bold text-lg text-white tracking-tight">Grok Commerce</span>
+          <span className="font-bold text-xl text-white tracking-tight">Grokify</span>
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">

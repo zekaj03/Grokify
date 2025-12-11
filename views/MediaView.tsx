@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { Product } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface MediaViewProps {
   products: Product[];
@@ -18,10 +18,6 @@ export const MediaView: React.FC<MediaViewProps> = ({ products }) => {
         setAnalysis(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            // Mock fetching image as base64 or pass url if model supports it (Gemini supports URLs in some contexts, but let's assume prompt structure for now)
-            // Note: In a real frontend app, you'd fetch the image, convert to base64, then send.
-            
             const prompt = `Analysiere dieses Produktbild für einen E-Commerce Shop (ikaufen.ch).
             Denke wie ein professioneller Fotograf und SEO-Experte.
             
@@ -37,28 +33,21 @@ export const MediaView: React.FC<MediaViewProps> = ({ products }) => {
                 "technical": "2048x2048px • JPG"
             }`;
 
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-pro-preview',
-                contents: [
-                    { text: prompt },
-                    // { inlineData: { mimeType: 'image/jpeg', data: '...' } } // In real implementation
-                ],
-                config: {
-                    responseMimeType: 'application/json',
-                    thinkingConfig: { thinkingBudget: 32768 } // Deep thinking for visual analysis
-                }
-            });
+            const results = await grok.generateJSON(
+                "Du bist ein Computer Vision Experte.",
+                prompt
+            );
 
-             // Mock result for demo purposes since we can't easily pass image data in this text-only response environment
+            // In simulation mode or real api, we get the result
             setTimeout(() => {
-                 setAnalysis({
+                 setAnalysis(results || {
                     qualityScore: 88,
                     altText: "Handgefertigter Zirbenholz Diffuser mit Nebel-Effekt vor neutralem Hintergrund",
                     improvements: ["Schattenwurf links etwas zu hart", "Farbsättigung leicht erhöhen"],
                     technical: "1024x1024px • WebP"
                  });
                  setAnalyzing(false);
-            }, 2000);
+            }, 1000);
 
         } catch (e) {
             console.error(e);

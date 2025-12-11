@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { Product } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface StoreIntelligenceViewProps {
   products: Product[];
@@ -25,9 +25,6 @@ export const StoreIntelligenceView: React.FC<StoreIntelligenceViewProps> = ({ pr
     setTranslationOutput('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const modelName = 'gemini-3-pro-preview';
-      
       if (activeTab === 'competitor') {
         const product = products.find(p => p.id === selectedProduct);
         const prompt = `Führe eine Konkurrenzanalyse für den Schweizer E-Commerce Markt durch für das Produkt: "${product?.title}".
@@ -45,18 +42,13 @@ export const StoreIntelligenceView: React.FC<StoreIntelligenceViewProps> = ({ pr
           "opportunity": "Eine Lücke im Markt (z.B. Bundle anbieten)"
         }`;
 
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt,
-          config: { 
-              responseMimeType: 'application/json',
-              thinkingConfig: { thinkingBudget: 32768 }
-          }
-        });
-        setAnalysisResult(JSON.parse(response.text || '{}'));
+        const results = await grok.generateJSON(
+            "Du bist ein Market Intelligence Experte.",
+            prompt
+        );
+        setAnalysisResult(results);
 
       } else if (activeTab === 'translation') {
-        // Translation might not need deep thinking, but consistency is good.
         const product = products.find(p => p.id === selectedProduct);
         const langName = targetLang === 'fr' ? 'Französisch (Schweiz/Romandie)' : 'Italienisch (Schweiz/Tessin)';
         
@@ -72,13 +64,12 @@ export const StoreIntelligenceView: React.FC<StoreIntelligenceViewProps> = ({ pr
         **Beschreibung:**
         [Übersetzte Beschreibung]`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash', // Flash is usually sufficient for translation, but user asked for "relevant" complex queries.
-          contents: prompt,
-        });
-        setTranslationOutput(response.text || '');
+        const response = await grok.generateText(
+             "Du bist ein professioneller Übersetzer.",
+             prompt
+        );
+        setTranslationOutput(response || '');
       } else if (activeTab === 'reputation') {
-         // Reputation analysis benefits from reasoning
          const prompt = `Analysiere fiktive Kundenbewertungen für "ikaufen.ch" und generiere eine Zusammenfassung sowie eine Antwort-Strategie.
          Simuliere verschiedene Kundenpersönlichkeiten.
          
@@ -90,15 +81,11 @@ export const StoreIntelligenceView: React.FC<StoreIntelligenceViewProps> = ({ pr
            "suggestedReply": "Entwurf für eine Antwort auf Kritik bezüglich Lieferzeit"
          }`;
          
-         const response = await ai.models.generateContent({
-            model: modelName,
-            contents: prompt,
-            config: { 
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingBudget: 32768 }
-            }
-          });
-          setAnalysisResult(JSON.parse(response.text || '{}'));
+         const results = await grok.generateJSON(
+             "Du bist ein Customer Success Manager.",
+             prompt
+         );
+         setAnalysisResult(results);
       }
 
     } catch (e) {

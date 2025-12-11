@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { StatMetric, Product, ViewState } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface DashboardViewProps {
   stats: StatMetric[];
@@ -75,11 +75,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ stats, recentProdu
     const productsToOptimize = recentProducts.filter(p => selectedProductIds.includes(p.id));
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        
-        // Single Prompt for ALL selected products to save costs
-        const prompt = `Du bist ein Senior E-Commerce Manager für die Schweiz.
-        Führe eine **Komplett-Optimierung** für folgende Produkte durch.
+        const prompt = `Führe eine **Komplett-Optimierung** für folgende Produkte durch.
         
         INPUT DATA:
         ${JSON.stringify(productsToOptimize.map(p => ({
@@ -110,22 +106,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ stats, recentProdu
             }
         ]`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', 
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingBudget: 4096 } // Higher budget for bulk processing
-            }
-        });
+        const results = await grok.generateJSON<any[]>(
+            "Du bist ein Senior E-Commerce Manager für die Schweiz (Grok AI).",
+            prompt
+        );
 
-        const results = JSON.parse(response.text || '[]');
-        setOptimizationResults(results);
+        setOptimizationResults(results || []);
         setOptimizationStep('results');
 
     } catch (e) {
         console.error("Bulk Optimization failed", e);
-        // Error handling could be better here, e.g. show error state
     }
   };
 

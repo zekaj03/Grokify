@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from './ui/Icons';
 import { Product, ProductStatus } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface ProductEditorProps {
   product: Product | null;
@@ -26,8 +26,6 @@ export const ProductEditor: React.FC<ProductEditorProps> = ({ product, isOpen, o
   if (!isOpen || !editedProduct) return null;
 
   const handleSave = () => {
-    // Logic to save, including alt texts if we were persisting them
-    console.log("Saving product with alt texts:", altTexts);
     onSave(editedProduct);
     onClose();
   };
@@ -36,12 +34,8 @@ export const ProductEditor: React.FC<ProductEditorProps> = ({ product, isOpen, o
     if (!editedProduct) return;
     setIsGeneratingAlt(true);
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const model = 'gemini-2.5-flash';
-
         const promises = editedProduct.images.map(async (img, index) => {
-             const prompt = `Du bist ein SEO-Experte für Schweizer E-Commerce.
-             Generiere einen präzisen, beschreibenden Alt-Text (Alternativtext) für ein Produktbild.
+             const prompt = `Generiere einen präzisen, beschreibenden Alt-Text (Alternativtext) für ein Produktbild.
              
              Produkt: ${editedProduct.title}
              Beschreibung: ${editedProduct.description.replace(/<[^>]*>?/gm, '')}
@@ -55,11 +49,11 @@ export const ProductEditor: React.FC<ProductEditorProps> = ({ product, isOpen, o
              
              Gib NUR den Text zurück, ohne Anführungszeichen.`;
 
-             const result = await ai.models.generateContent({
-                 model: model,
-                 contents: prompt
-             });
-             return { index, text: result.text.trim() };
+             const text = await grok.generateText(
+                 "Du bist ein SEO-Experte für Schweizer E-Commerce.",
+                 prompt
+             );
+             return { index, text: text.trim() };
         });
 
         const results = await Promise.all(promises);

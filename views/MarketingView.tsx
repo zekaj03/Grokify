@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { Product } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface MarketingViewProps {
   products: Product[];
@@ -33,8 +33,6 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ products }) => {
     setPostSuccess(false);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
       const productContext = `
       Produktname: ${product.title}
       Beschreibung: ${product.description.replace(/<[^>]*>?/gm, '')}
@@ -44,8 +42,7 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ products }) => {
       `;
 
       let prompt = '';
-      let modelName = 'gemini-2.5-flash';
-      let config: any = {};
+      let role = 'Du bist ein erfahrener Social Media Manager für E-Commerce.';
 
       switch (channel) {
         case 'instagram':
@@ -59,6 +56,7 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ products }) => {
           ${productContext}`;
           break;
         case 'email':
+          role = 'Du bist ein Email-Marketing Experte.';
           prompt = `Schreibe eine Marketing-E-Mail für dieses Produkt.
           Anforderungen:
           - Sprache: Schweizer Hochdeutsch (ss statt ß)
@@ -68,6 +66,7 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ products }) => {
           ${productContext}`;
           break;
         case 'ads':
+          role = 'Du bist ein Performance Marketing Spezialist.';
           prompt = `Erstelle Werbetexte für Google/Facebook Ads.
           Anforderungen:
           - Sprache: Schweizer Hochdeutsch (ss statt ß)
@@ -77,10 +76,8 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ products }) => {
           ${productContext}`;
           break;
         case 'blog':
-          // Blog posts require deep reasoning and structure
-          modelName = 'gemini-3-pro-preview';
-          config = { thinkingConfig: { thinkingBudget: 32768 } };
-          prompt = `Schreibe einen ausführlichen Blog-Post über dieses Produkt für unseren Shopify Shop.
+          role = 'Du bist ein professioneller Blog-Autor für einen Shopify Store.';
+          prompt = `Schreibe einen ausführlichen Blog-Post über dieses Produkt.
           Anforderungen:
           - Sprache: Schweizer Hochdeutsch (ss statt ß)
           - Autor: iKteam (Setze dies explizit in die Metadaten)
@@ -101,16 +98,11 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ products }) => {
           break;
       }
 
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: config
-      });
-
-      setGeneratedContent(response.text || 'Keine Inhalte generiert.');
+      const content = await grok.generateText(role, prompt);
+      setGeneratedContent(content || 'Keine Inhalte generiert.');
     } catch (error) {
       console.error("Generierung fehlgeschlagen:", error);
-      setGeneratedContent(`Fehler bei der Generierung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}. Bitte prüfen Sie den API Key.`);
+      setGeneratedContent(`Fehler bei der Generierung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}.`);
     } finally {
       setIsGenerating(false);
     }

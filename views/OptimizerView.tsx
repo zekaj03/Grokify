@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { OptimizationTone, Product } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface OptimizerViewProps {
   products: Product[];
@@ -24,7 +24,6 @@ export const OptimizerView: React.FC<OptimizerViewProps> = ({ products }) => {
     setOptimizedImages(null);
     setOptimizedText(null);
 
-    // Mock extra images for demo purposes if image optimization is selected
     const currentDemoImages = optimizeImages ? [
         ...demoProduct.images,
         'https://picsum.photos/400/400?random=101',
@@ -38,8 +37,6 @@ export const OptimizerView: React.FC<OptimizerViewProps> = ({ products }) => {
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
       // 1. Text Optimization
       const textPrompt = `Optimiere diesen Produkttitel und die Beschreibung für einen Schweizer Shopify Store.
       Produkt: ${demoProduct.title}
@@ -49,11 +46,7 @@ export const OptimizerView: React.FC<OptimizerViewProps> = ({ products }) => {
       
       Erstelle EINEN kurzen, konvertierungsstarken Satz, der Titel und USP kombiniert.`;
       
-      const textResponsePromise = ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
-          contents: textPrompt,
-          config: { thinkingConfig: { thinkingBudget: 1024 } }
-      });
+      const textResponsePromise = grok.generateText("Du bist ein Schweizer E-Commerce Copywriter.", textPrompt);
 
       // 2. Image Optimization (Parallel if selected)
       let imageResponsePromise = Promise.resolve(null);
@@ -64,28 +57,19 @@ export const OptimizerView: React.FC<OptimizerViewProps> = ({ products }) => {
           
           Output als JSON Array der Indices: [0, 2, 3, 5]`;
 
-          // In a real app, we would pass image bytes here. 
-          // For demo, we rely on the model simulating the selection logic or reacting to descriptions.
-          imageResponsePromise = ai.models.generateContent({
-             model: 'gemini-3-pro-preview',
-             contents: imagePrompt,
-             config: { 
-                 responseMimeType: 'application/json',
-                 thinkingConfig: { thinkingBudget: 2048 } 
-             }
-          }) as any;
+          // Simulate image reasoning text
+          imageResponsePromise = grok.generateJSON("Du bist ein KI Vision Experte.", imagePrompt);
       }
 
       const [textResponse, imageResponse] = await Promise.all([textResponsePromise, imageResponsePromise]);
 
-      setOptimizedText(textResponse.text || "Keine Optimierung möglich.");
+      setOptimizedText(textResponse || "Keine Optimierung möglich.");
 
       if (optimizeImages && imageResponse) {
-          // Simulate parsing indices or just picking a subset for the demo visual
-          // In reality: JSON.parse(imageResponse.text) -> indices
-          // Here we assume successful selection of best 4
-          const bestIndices = [0, 1, 3, 4]; 
-          setOptimizedImages(bestIndices.map(i => currentDemoImages[i]));
+          // In real API we would parse the actual indices returned by Grok
+          // For now we simulate success or use the parsed result if valid
+          const bestIndices = Array.isArray(imageResponse) && imageResponse.length > 0 ? imageResponse : [0, 1, 3, 4]; 
+          setOptimizedImages(bestIndices.map((i: number) => currentDemoImages[i] || currentDemoImages[0]));
       }
 
     } catch (e) {

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { Product, ProductStatus } from '../types';
 import { ProductEditor } from '../components/ProductEditor';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface ProductsViewProps {
   products: Product[];
@@ -32,13 +32,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
       let aVal: any = a[sortConfig.key as keyof Product];
       let bVal: any = b[sortConfig.key as keyof Product];
 
-      // Special cases for nested or computed properties
       if (sortConfig.key === 'seoScore') {
           aVal = a.seoScore;
           bVal = b.seoScore;
       }
 
-      // Handle strings case-insensitively
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
 
@@ -78,7 +76,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
   const handleSaveProduct = (updatedProduct: Product) => {
       const newProducts = products.map(p => p.id === updatedProduct.id ? updatedProduct : p);
       setProducts(newProducts);
-      setEditingProduct(null); // Close editor
+      setEditingProduct(null); 
   }
 
   const handleBulkAction = (action: string) => {
@@ -96,7 +94,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
               title: res.optimizedTitle || p.title,
               description: res.optimizedDescription || p.description,
               productType: res.productType || p.productType,
-              // If collection is suggested, we add it to tags for now as Product type doesn't have collection field
               tags: res.collection ? [...(res.tags || p.tags), res.collection] : (res.tags || p.tags),
               metafields: {
                   ...p.metafields,
@@ -114,13 +111,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
 
       setProducts(newProducts);
       setShowOptimizationModal(false);
-      setSelectedIds(new Set()); // Clear selection
+      setSelectedIds(new Set());
   };
 
   const runBulkOptimization = async (action: string) => {
     if (selectedIds.size === 0) return;
     
-    // Set label for the modal
     let label = "Verarbeite...";
     switch(action) {
         case 'optimize_complete': label = "Komplett-Optimierung"; break;
@@ -142,11 +138,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
     const productsToOptimize = products.filter(p => selectedIds.has(p.id));
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        
         let taskInstruction = "";
         
-        // Define specific instructions based on action
         if (action === 'optimize_complete') {
             taskInstruction = `
             1. Optimiere den Titel (Verkaufspsychologie).
@@ -172,8 +165,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
             taskInstruction = `1. Generiere eine eindeutige Artikelnummer (Format: ART-XXXX) basierend auf dem Titel.`;
         }
 
-        const prompt = `Du bist ein Senior E-Commerce Manager für die Schweiz.
-        Führe folgende Aufgabe für ${productsToOptimize.length} Produkte durch.
+        const prompt = `Führe folgende Aufgabe für ${productsToOptimize.length} Produkte durch.
         
         INPUT DATA:
         ${JSON.stringify(productsToOptimize.map(p => ({
@@ -191,7 +183,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
         [
             {
                 "id": "ID des Produkts",
-                // Füge nur die geänderten Felder hinzu:
                 "optimizedTitle": "...", 
                 "optimizedDescription": "...", 
                 "seoTitle": "...",
@@ -206,25 +197,19 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
             }
         ]`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', 
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingBudget: 2048 }
-            }
-        });
+        const results = await grok.generateJSON<any[]>(
+            "Du bist ein Senior E-Commerce Manager für die Schweiz (Grok AI).",
+            prompt
+        );
 
-        const results = JSON.parse(response.text || '[]');
-        setOptimizationResults(results);
+        setOptimizationResults(results || []);
         setOptimizationStep('results');
 
     } catch (e) {
         console.error("Bulk Optimization failed", e);
-        // Fallback for demo if API fails or quota exceeded
         setOptimizationResults(productsToOptimize.map(p => ({
             id: p.id,
-            changesSummary: "Simulation: Erfolgreich verarbeitet (API Limit)",
+            changesSummary: "Fehler bei der Verbindung zu Grok.",
             optimizedTitle: p.title
         })));
         setOptimizationStep('results');
@@ -447,7 +432,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ products, setProduct
         onSave={handleSaveProduct}
     />
 
-    {/* Optimization Modal */}
     {showOptimizationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowOptimizationModal(false)}></div>

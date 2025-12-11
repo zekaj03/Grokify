@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { Collection } from '../types';
 import { MOCK_COLLECTIONS, MOCK_PRODUCTS } from '../services/mockData';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 export const CollectionsView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'uncategorized'>('overview');
@@ -14,29 +14,22 @@ export const CollectionsView: React.FC = () => {
     const handleAutoAssign = async () => {
         setIsAutoAssigning(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            // Using thinking mode to decide complex categorization logic
             const prompt = `Analysiere diese Produkte und weise sie den passenden Kollektionen zu.
             
             Produkte: ${uncategorizedProducts.map(p => p.title).join(', ')}
             Verfügbare Kollektionen: ${MOCK_COLLECTIONS.map(c => c.title).join(', ')}
             
             Entscheide logisch basierend auf Semantik, Saison und Produkttyp.
-            Denke Schritt für Schritt, warum ein Produkt passt.
             
             Output JSON:
             [{ "product": "Name", "collection": "Name", "reason": "Begründung" }]`;
 
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-pro-preview',
-                contents: prompt,
-                config: {
-                    responseMimeType: 'application/json',
-                    thinkingConfig: { thinkingBudget: 32768 }
-                }
-            });
-            console.log(response.text);
-            // Simulate processing time and success
+            const results = await grok.generateJSON(
+                "Du bist ein Shopify Collection Manager.",
+                prompt
+            );
+            console.log(results);
+            
             setTimeout(() => setIsAutoAssigning(false), 2000);
         } catch (e) {
             console.error(e);

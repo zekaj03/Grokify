@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from '../components/ui/Icons';
 import { Product } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { grok } from '../services/grok';
 
 interface AutomationViewProps {
   products: Product[];
@@ -65,14 +65,10 @@ export const AutomationView: React.FC<AutomationViewProps> = ({ products }) => {
     addToLog(`Lade Kontextdaten aus Shopify API...`);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       let prompt = '';
       
-      // Using gemini-3-pro-preview for deep reasoning on complex tasks
-      const modelName = 'gemini-3-pro-preview';
-      
       if (task.type === 'bundling') {
-        addToLog(`Aktiviere ${modelName} für Margen-Analyse...`);
+        addToLog(`Aktiviere Grok Neural Core für Margen-Analyse...`);
         prompt = `Du bist ein E-Commerce Stratege. Erstelle ein unwiderstehliches Produkt-Bundle aus: ${task.data.products.join(' + ')}.
         Analysiere psychologische Preispunkte und Kundenbedürfnisse.
         
@@ -86,7 +82,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({ products }) => {
           "tags": ["tag1", "tag2"]
         }`;
       } else if (task.type === 'landing_page') {
-        addToLog(`Aktiviere ${modelName} für UX/UI Design...`);
+        addToLog(`Aktiviere Grok für UX/UI Design...`);
         prompt = `Du bist ein Senior UX Designer. Erstelle die Struktur für eine "Winter Sale" Landing Page für einen Schweizer Shop.
         Berücksichtige Conversion-Optimierung (CRO) und lokale Design-Präferenzen.
         
@@ -101,7 +97,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({ products }) => {
           "colorScheme": "Vorschlag für Farben"
         }`;
       } else if (task.type === 'dead_stock') {
-        addToLog(`Aktiviere ${modelName} für Abverkaufs-Strategie...`);
+        addToLog(`Aktiviere Grok für Abverkaufs-Strategie...`);
         prompt = `Du bist ein Marketing-Experte. Erstelle eine E-Mail Kampagne um das "Fondue-Set" abzuverkaufen.
         Der Ton soll dringend aber exklusiv wirken.
         
@@ -114,23 +110,17 @@ export const AutomationView: React.FC<AutomationViewProps> = ({ products }) => {
         }`;
       }
 
-      addToLog('Sende Daten an Grok AI Neural Core (Thinking Mode Active)...');
+      addToLog('Sende Daten an xAI API...');
       
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: { 
-          responseMimeType: 'application/json',
-          thinkingConfig: { thinkingBudget: 32768 } // Enable deep thinking
-        }
-      });
+      const result = await grok.generateJSON(
+          "Du bist ein Grok AI Autonomous Agent.",
+          prompt
+      );
 
       addToLog('Verarbeite Antwort...');
-      const result = JSON.parse(response.text || '{}');
       setGeneratedResult(result);
       addToLog('Task erfolgreich ausgeführt.');
       
-      // Update task status
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'done' } : t));
 
     } catch (e) {
