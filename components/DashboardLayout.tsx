@@ -19,6 +19,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: Icons.Dashboard },
     { id: 'autopilot', label: 'Grok Dashboard', icon: Icons.Brain },
     { id: 'intelligence', label: 'Market Intelligence', icon: Icons.Eye },
+    { id: 'trading', label: 'Trading Agent', icon: Icons.BarChart },
     { id: 'products', label: 'Produkte', icon: Icons.Products },
     { id: 'duplicates', label: 'Duplikate', icon: Icons.Copy },
     { id: 'collections', label: 'Kollektionen', icon: Icons.Collections },

@@ -12,6 +12,7 @@ import { DuplicatesView } from './views/DuplicatesView';
 import { BackupView } from './views/BackupView';
 import { MediaView } from './views/MediaView';
 import { GrokChat } from './components/GrokChat';
+import { TradingAgentView } from './views/TradingAgentView';
 import { ViewState, Product } from './types';
 import { MOCK_PRODUCTS, MOCK_STATS } from './services/mockData';
 import { Icons } from './components/ui/Icons';
@@ -45,6 +46,8 @@ function App() {
         return <SEOView products={products} />;
       case 'marketing':
         return <MarketingView products={products} />;
+      case 'trading':
+        return <TradingAgentView />;
       default:
         return <DashboardView stats={MOCK_STATS} recentProducts={products} onNavigate={setCurrentView} />;
     }
