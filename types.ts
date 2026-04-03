@@ -70,4 +70,4 @@ export interface Collection {
   image?: string;
 }
 
-export type ViewState = 'dashboard' | 'products' | 'optimizer' | 'seo' | 'marketing' | 'collections' | 'autopilot' | 'intelligence' | 'duplicates' | 'backup' | 'media';
+export type ViewState = 'dashboard' | 'products' | 'optimizer' | 'seo' | 'marketing' | 'collections' | 'autopilot' | 'intelligence' | 'duplicates' | 'backup' | 'media' | 'trading';
